@@ -1,0 +1,635 @@
+---
+title: "Learning Dairy - MS5130 Assignment 2"
+author: "Manoj Hanumantha"
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+execute:
+  echo: false
+---
+
+**Date: 16-02-2024**
+
+**Problem Statement:** Faced issues with non-UTF-8 encoded characters in
+the State column, which caused errors in subsequent data analysis.
+
+![](utf8.png) ![](no%20names%20in%20graph.png)
+
+**Solution:** Applied the iconv() function with the correct parameters
+to ensure all text was properly converted to UTF-8 encoding, avoiding
+any character encoding issues.
+
+**UTF 8 conversion code:**
+
+```{r, eval=FALSE, echo=TRUE}
+#Standardize 'State' column encoding to UTF-8.
+Diwali_Sales_Data$State <- iconv(Diwali_Sales_Data$State, to = "UTF-8")
+
+```
+
+![](after%20utf8.png)
+
+**Reference Link** -
+https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/iconv
+
+**Date: 18-02-2024**
+
+**Problem Statement:** Encountered a challenge with the ggplot2 bar
+chart of state-wise purchases not displaying due to factors not being
+ordered.
+
+![](graphs%20not%20in%20order.png)
+
+**Initial code:**
+
+```{r, eval=FALSE, echo=TRUE}
+ggplot(state_wise_purchase, aes(x = State, -state_wise_total, y = state_wise_total , fill = State)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = 'State', y = 'State wise total sales') + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+**Solution:** Used fct_reorder() within aes() to reorder the factor
+levels based on the state_wise_total to ensure the bar chart is
+displayed correctly.
+
+**Enhanced code:**
+
+```{r, eval=FALSE, echo=TRUE}
+ggplot(state_wise_purchase, aes(x = fct_reorder(State, -state_wise_total), y = state_wise_total , fill = State)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = 'State', y = 'State wise total sales') + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+![](graphs%20in%20order.png)
+
+**Reference Link** -
+https://www.geeksforgeeks.org/how-to-order-boxes-in-boxplot-with-fct_reorder-in-r/
+
+**Date: 20-02-2024**
+
+**Problem Statement:** While attempting to create custom labels for a
+pie chart representing the top 5 product categories by sales, I
+encountered an error stating "non-numeric argument to mathematical
+function" and a warning about an unknown or uninitialized column
+percentage_share.
+
+![](label%20error.png)
+
+**Initial code:**
+
+```{r, eval=FALSE, echo=TRUE}
+label <- paste(top_5_categories$Product_Category, 
+               "\nSales: ", 
+               scales::comma(top_5_categories$category_wise_sales), 
+               "\nPercentage: ", 
+               round(top_5_categories$percentage_share, 1), 
+               "%", 
+               sep = "")
+```
+
+**Solution**: Upon inspection, I realized that the percentage_share
+column had not been created properly due to an error in the code. To
+rectify this, I first ensured that the category_wise_purchase dataframe
+contained the percentage_share column by correctly calculating it using
+the formula percentage_share = (category_wise_sales /
+sum(category_wise_sales)) \* 100. After confirming the presence of the
+percentage_share column, I revisited the code for creating custom
+labels. The error occurred because the percentage_share column was not
+recognized as numeric. To address this, I modified the code to properly
+reference the percentage_share column from the category_wise_purchase
+dataframe rather than from top_5_categories. By ensuring that the
+correct dataframe was used, I resolved the error and successfully
+generated custom labels for the pie chart.
+
+**Correct code:**
+
+```{r, eval=FALSE, echo=TRUE}
+label <- paste(top_5_categories$Product_Category, 
+               "\nSales: ", 
+               scales::comma(top_5_categories$category_wise_sales), 
+               "\nPercentage: ", 
+               round(category_wise_purchase$percentage_share[1:5], 1), 
+               "%", 
+               sep = "")
+```
+
+**Reference Link** -
+https://stackoverflow.com/questions/54845084/non-numeric-argument-to-mathematical-function-error-while-rounding-off-particula
+
+**Date: 21-02-2024**
+
+**Problem Statement:** Had difficulty identifying the top 5 occupations
+contributing to sales due to a cluttered bar chart.
+
+![](all%20occupations.png)
+
+**Solution:** Limited the bar chart to the top 5 occupations by using
+head().
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+#Identifying top 5 occupations contributing to majority sales
+
+sales_by_occupation <- Diwali_Sales_Data %>%
+  group_by(Occupation) %>%
+  summarise(total_sales = sum(Amount)) %>%
+  arrange(desc(total_sales))
+top_5_occupations <- head(sales_by_occupation, 5)
+
+```
+
+**Reference** - Week 3 tutorial recording.
+
+![](top5%20occupations.png)
+
+**Date: 21-02-2024**
+
+**Problem Statement:** The bar graph displaying “Total Sales by
+Occupation” lacked clarity because the occupation names on the x-axis
+were overlapping, making them difficult to read.
+
+![](order1.png) ![](top5%20occupations.png)
+
+**Solution:** To enhance the visual appeal and readability of the graph,
+I modified the ggplot code to tilt the x-axis labels at a 45-degree
+angle. This was achieved by adding the theme() function with the
+axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1) argument to
+the existing ggplot code. The result was a much clearer graph, where
+each occupation label was distinct and legible. Did this for all the bar
+graphs that I had used in my analysis.
+
+**Corrected code:**
+
+```{r, eval=FALSE, echo=TRUE}
+#Plot total sales for the top 5 occupations
+  
+ggplot(top_5_occupations, aes(x = reorder(Occupation, -total_sales), y = total_sales, fill = Occupation)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Top 5 Occupations", x = "Occupation", y = "Total Sales") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+```
+
+**Reference** - Question asked to Christopher and Siddhant in week 4
+tutorial.
+
+**Date: 19-03-2024**
+
+**Problem Statement:** Errors in package installation due to network
+issues or incorrect repository settings.
+
+![](cran%20error.png)
+
+**Solution:** Ensured the CRAN mirror was set correctly using
+options(repos = "https://cloud.r-project.org") and checked the internet
+connection. If the problem persisted, I tried a different CRAN mirror or
+installed the packages during off-peak hours.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+options(repos = "https://cloud.r-project.org")  # Set CRAN mirror
+```
+
+**Reference Link -** https://stackoverflow.com/questions/55244209/error-in-contrib-urlrepos-source-in-r-trying-to-use-cran-without-setting-a
+
+**Date: 19-03-2024**
+
+**Problem Statement:** The working directory was not set correctly,
+leading to errors in importing datasets.
+
+![](working%20directory.png)
+
+**Solution**: Verified the path provided in setwd() was correct and
+accessible. I also ensured that the datasets were present in the
+specified directory.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Check the present working directory
+getwd()
+
+# Set the working directory to the location where the datasets are present
+setwd("C:/Users/Manoj/Desktop/Semester 2 Assignments/Applied Analytics in Business and Society/Assignment 3/FIFA")
+
+```
+
+![](after%20swd.png)
+
+**Date: 19-03-2024**
+
+**Problem Statement:** While setting the working directory using
+setwd("C:/Users/Manoj/Desktop/Semester 2 Assignments/Applied Analytics
+in Business and Society/Assignment 3/FIFA"), I encountered an error
+message.
+
+![](setwderr.png)
+
+**Reference -** Week 5 tutorial recording.
+
+**Solution:**
+
+The error likely occurred because the backslashes () in the file path
+need to be escaped with forward slashes (/) for R to interpret the path
+correctly on your operating system.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Set the working directory to the location where the datasets are present
+setwd("C:/Users/Manoj/Desktop/Semester 2 Assignments/Applied Analytics in Business and Society/Assignment 3/FIFA")
+```
+
+**Explanation:**
+
+Forward slashes (/) are the standard path separators in Unix-based
+systems. By escaping the backslashes with forward slashes, we ensure
+that the path is interpreted correctly regardless of the operating
+system.
+
+**Reference** - MS5130 Concepts: It's essential to be familiar with
+different path separator conventions across operating systems.
+
+**Date: 21-02-2024**
+
+**Problem Statement:** When attempting to combine the datasets using
+combined_data \<- matches %\>% inner_join(team_appearances, by =
+"match_id") %\>% inner_join(player_appearances, by = "match_id") %\>%
+inner_join(goals, by = "match_id"), I received an error message
+indicating that some columns might have mismatching names or data types.
+
+![](navalues.png)
+
+**Solution:**
+
+The error arises because the default join type in dplyr functions like
+inner_join is an inner join, which keeps only rows with matching values
+in all join columns. Misspelled column names or incompatible data types
+can cause mismatches.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Combine datasets using common columns
+combined_data <- matches %>%
+  left_join(team_appearances, by = "match_id") %>%
+  left_join(player_appearances, by = "match_id") %>%
+  left_join(goals, by = "match_id")
+```
+
+But left also has a disadvantage of having many missing values.
+
+![](missing%20values.png)
+
+**Reference** - Doubt asked during week 11 tutorial session.
+
+**Date: 23-02-2024**
+
+**Problem Statement:** The factor() function did not set the levels of
+the result.y variable correctly, affecting the modeling process.
+
+![](without%20factor.png)
+
+**Solution:** Specified the levels explicitly in the factor() function
+and used relevel() to set the reference category for the factor
+variable.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Convert result.y variable to a factor with specified levels
+combined_data$result.y <- factor(combined_data$result.y, levels = c("win", "lose", "draw"))
+```
+
+**Reference Link -** https://stackoverflow.com/questions/18413756/re-ordering-factor-levels-in-data-frame
+
+**Date: 26-03-2024**
+
+**Problem Statement:**
+
+I attempted to fit a multinomial logistic regression model using
+gam(result.y \~ home_team_score + away_team_score + goals_for, data =
+train_data), but received an error suggesting incorrect model family.
+
+![](without%20factor.png) **Solution:**
+
+The error occurs because the result.y variable has multiple categories
+("win", "lose", "draw"). The appropriate model family for such cases is
+multinomial, not the default Gaussian family used by glm or gam.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Fit the multinomial logistic regression model
+model <- multinom(result.y ~ home_team_score + away_team_score + goals_for, data = train_data)
+```
+
+**Reference Link -** https://www.geeksforgeeks.org/multinomial-logistic-regression-in-r/
+
+**Date: 26-02-2024**
+
+**Problem Statement:** The random sampling for creating training and
+test datasets did not produce reproducible results.
+
+**Solution:** Set a seed using set.seed() before sampling to ensure
+reproducibility of the results.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Convert result.y variable to a factor with specified levels
+combined_data$result.y <- factor(combined_data$result.y, levels = c("win", "lose", "draw"))
+
+# Check unique values in result.y
+unique(combined_data$result.y)
+
+# Check for missing values in result.y
+sum(is.na(combined_data$result.y))
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Sample size for training data, 70% training and 30% test data
+train_size <- floor(0.7 * nrow(combined_data))
+
+# Generate random indices for training data
+train_indices <- sample(seq_len(nrow(combined_data)), size = train_size)
+
+# Create training and test datasets
+train_data <- combined_data[train_indices, ]
+test_data <- combined_data[-train_indices, ]
+
+# Check unique values in result.y in train_data
+unique(train_data$result.y)
+
+# Check if the "draw" category is present in the model
+"draw" %in% levels(train_data$result.y)
+
+# Set the reference category to "draw"
+train_data$result.y <- relevel(train_data$result.y, ref = "draw")
+
+# Fit the multinomial logistic regression model
+model <- multinom(result.y ~ home_team_score + away_team_score + goals_for, data = train_data)
+
+# Predict on test data
+predictions <- predict(model, newdata = test_data)
+
+# Check levels of result.y after modeling 
+levels(train_data$result.y)
+
+# Calculate accuracy
+accuracy <- mean(predictions == test_data$result.y)
+
+# Print accuracy in %
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
+# Summary of the model
+summary(model)
+```
+
+![](win%20displayed.png) ![](win%20display2.png) **Explanation:**
+
+In a multinomial logistic regression model, the reference category is
+used as a baseline against which other categories are compared. When the
+reference category is not specified explicitly, R automatically selects
+the category with the highest alphabetical order as the reference
+category.
+
+In my case, before setting a reference for the multinomial regression
+model, the "win" category might not have been displayed in the model
+output because it might have been alphabetically ordered after other
+categories, such as "draw" and "lose."
+
+To set a specific reference category, such as "draw," you can use the
+`relevel()` function in R.
+
+By setting a reference category, we explicitly define which category
+should be used as the reference for comparison in the model output. This
+can help in interpreting the coefficients of other categories relative
+to the reference category, providing a clearer understanding of the
+model's results.
+
+**Reference Link -**
+https://stats.oarc.ucla.edu/r/dae/multinomial-logistic-regression/
+
+**Date: 30-03-2024**
+
+**Problem Statement:** The interactive bar chart created with plot_ly()
+might not have displayed the nationalities in descending order of count
+due to incorrect factor level ordering.
+
+![](player%20names.png)
+
+**Solution:** Reordered the factor levels of nationality in the
+nationality_data data frame using the fct_reorder() function from the
+forcats package to ensure the bar chart displayed nationalities in the
+correct order.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Reorder the levels of nationality in descending order of count
+nationality_data$nationality <- factor(nationality_data$nationality, 
+                                       levels = rev(nationality_data$nationality))
+
+# Define custom colors for each nationality
+custom_colors <- c(
+  "Dutch" = "#ff7f0e",     # Orange
+  "Arabic" = "#008000",    # Green
+  "Scandinavian" = "#ff69b4",  # Pink
+  "German" = "#000000",    # Black
+  "Spanish" = "#d62728",   # Red
+  "French" = "#1f77b4",    # Blue
+  "Italian" = "#0000ff",   # Dark Blue
+  "Serbian" = "#7f7f7f",   # Gray
+  "Icelandic" = "#87ceeb"  # Sky Blue
+)
+
+# Reorder the custom colors accordingly
+custom_colors <- custom_colors[levels(nationality_data$nationality)]
+```
+
+![](player%20names1.png)
+
+**Date: 1-04-2024**
+
+**Problem Statement:** Saving the interactive bar chart as an HTML
+widget using htmlwidgets::saveWidget() might have failed if the file
+path was not specified correctly or if there were permissions issues.
+
+**Solution:** Specified the correct file path and ensured that I had the
+necessary write permissions to save the HTML widget. If the problem
+persisted, I checked the htmlwidgets package documentation for
+additional troubleshooting steps.
+
+**Reference Link -** https://cran.r-project.org/web/packages/htmlwidgets/vignettes/develop_intro.html
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Save the plot as a html widget
+
+htmlwidgets::saveWidget(plot2, "player_position_distribution.html")
+
+#Display the plot 
+plot2
+
+```
+
+
+
+**Date: 02-04-2024**
+
+**Problem Statement:** While creating a line chart for goal distribution
+by minute, the summarise() function threw an error due to incorrect
+grouping variables.Initially I had used one more column minute_label
+which had unformatted data like 19' for 19th minute.
+
+![](incorrect%20minute%20and%20goals.png)
+
+**Solution:** I ensured that the group_by() function was used correctly
+before summarizing to avoid any errors. The correct grouping should be
+based on minute_regulation only, not including match_id and goal_id.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Goal Distribution by Minute using a line chart
+# Grouping data by match_id, minute_label, and goal_id to count distinct goals
+goal_distribution <- combined_data %>%
+  filter(!is.na(minute_regulation)) %>%
+  group_by(match_id, minute_regulation, goal_id) %>%
+  summarise(goals_count = n_distinct(goal_id))
+
+# Grouping data by minute_label to sum up the goals count for each minute
+goal_distribution <- goal_distribution %>%
+  group_by(minute_regulation) %>%
+  summarise(goals_count = sum(goals_count))
+
+# Plotting goal distribution by minute
+plot3 <- plot_ly(x = ~goal_distribution$minute_regulation, y = ~goal_distribution$goals_count, 
+                 type = "scatter", mode = "lines+markers",
+                 marker = list(color = 'rgba(65, 105, 225, .6)'), 
+                 line = list(shape = "spline"),
+                 text = hover_text) %>%
+  layout(title = "Goal Distribution by Minute",
+         xaxis = list(title = "Minute"),
+         yaxis = list(title = "Goals Count"))
+
+# Save the plot as a HTML widget
+htmlwidgets::saveWidget(plot3, "goal_distribution.html")
+
+plot3
+
+```
+
+![](before%20hover1.png)
+
+**Reference** - Had to revisit the dataset and saw that minute_regulation column was present which was used later to resolve the issue.
+
+**Date: 03-04-2024**
+
+**Problem Statement:** The hover text in the plot_ly() function did not
+display as intended, causing confusion in interpreting the plot.
+
+**Solution:** I corrected the hover text by ensuring proper HTML tags
+were used and that the variables were referenced correctly within the
+paste() function.
+
+**Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Create hover text
+
+# Create hover text
+hover_text <- paste("Minute = ", goal_distribution$minute_regulation, "<br>Number of Goals = ", goal_distribution$goals_count)
+
+```
+
+![](after%20hover.png)
+
+**Reference Link:** https://plotly.com/r/hover-text-and-formatting/
+
+**Date: 04-04-2024**
+
+**Problem Statement:** The total sum of goals calculated did not match
+the expected value, leading to doubts about the accuracy of the
+analysis.
+
+**Solution:** I double-checked the data filtering and grouping steps to
+ensure that no duplicate counts were included in the goals_count
+calculation.
+
+![](correct%20goals.png)
+
+**Reference** - My own research and going through the dataset in excel to find the number of goals with sum function and then comparing it with the result of the above output.
+
+**Date: 04-04-2024**
+
+**Problem Statement:** Encountered issues with the tm package functions
+not processing the text corpus as expected, resulting in an incomplete
+word cloud.
+
+**Initial Code:**
+
+```{r, eval=FALSE, echo=TRUE}
+docs <- docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace) %>%
+  tm_map(tolower) %>%
+  tm_map(removeWords, stopwords("english"))
+```
+
+![](incomplete%20word%20cloud.png)
+
+**Solution:** I verified each text processing step, such as removing
+numbers and punctuation, and ensured that the tm_map() function was
+applied correctly to the corpus.
+
+**Enhanced code:**
+
+```{r, eval=FALSE, echo=TRUE}
+# Combine text from multiple columns into a single corpus
+text_corpus <- paste(combined_data$match_name.x, combined_data$stadium_name.x, combined_data$city_name.x, combined_data$country_name.x, combined_data$team_name.x, combined_data$team_name.y, combined_data$player_team_name)
+
+# Create a corpus
+docs <- Corpus(VectorSource(text_corpus))
+
+# Clean the text
+docs <- docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace) %>%
+  tm_map(content_transformer(tolower)) %>%
+  tm_map(removeWords, stopwords("english"))
+
+# Create a document-term matrix
+dtm <- DocumentTermMatrix(docs)
+
+# Convert the matrix to a data frame
+dtm_df <- as.data.frame(as.matrix(dtm))
+
+# Compute word frequencies
+word_freq <- colSums(dtm_df)
+
+# Sort words by frequency
+sorted_word_freq <- sort(word_freq, decreasing = TRUE)
+
+# Create a word cloud
+wordcloud(words = names(sorted_word_freq), freq = sorted_word_freq, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+
+```
+
+![](complete%20word%20cloud.png)
+
+**Reference** - Week 11 Tutorial recording.
